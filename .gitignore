@@ -1,0 +1,37 @@
+# 环境变量文件
+.env
+.env.local
+.env.production
+
+# 依赖目录
+node_modules/
+dist/
+build/
+.DS_Store
+
+# 数据库文件
+mysql-data/
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+.tmp/
+temp/
+*.tmp
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
