@@ -11,22 +11,63 @@ const router = express.Router();
  * GET /api/v1/stats
  */
 router.get('/', async (req, res) => {
+  console.log('=== Stats API called ===');
+  console.log('Request URL:', req.url);
+  console.log('Request method:', req.method);
   try {
     // 获取总刷题数
     const total = await Record.count({
       where: { status: 'completed' }
     });
-
-    // 获取上周刷题数
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    const lastWeekTotal = await Record.count({
+    // 声明变量
+    let lastWeekTotal = 0;
+    let thisWeekTotal = 0;
+
+    // 获取上周刷题数（上周一到上周日）
+    const now = new Date();
+    const currentDay = now.getDay(); // 0=周日, 1=周一, ..., 6=周六
+    const daysToLastMonday = currentDay === 0 ? 6 : currentDay - 1; // 距离本周一的天数
+    
+    // 计算上周一的日期
+    const lastMonday = new Date(now);
+    lastMonday.setDate(now.getDate() - daysToLastMonday - 7);
+    lastMonday.setHours(0, 0, 0, 0);
+    
+    // 计算上周日的日期
+    const lastSunday = new Date(lastMonday);
+    lastSunday.setDate(lastMonday.getDate() + 6);
+    lastSunday.setHours(23, 59, 59, 999);
+    
+    console.log('Debug - lastMonday:', lastMonday.toISOString().split('T')[0]);
+    console.log('Debug - lastSunday:', lastSunday.toISOString().split('T')[0]);
+    
+    lastWeekTotal = await Record.count({
       where: { 
         status: 'completed',
-        date: { [Op.gte]: oneWeekAgo }
+        date: { 
+          [Op.gte]: lastMonday.toISOString().split('T')[0],
+          [Op.lte]: lastSunday.toISOString().split('T')[0]
+        }
       }
     });
+    
+    console.log('Debug - lastWeekTotal:', lastWeekTotal);
+    
+    // 获取本周刷题数（本周一到今天）
+    const thisMonday = new Date(now);
+    thisMonday.setDate(now.getDate() - daysToLastMonday);
+    thisMonday.setHours(0, 0, 0, 0);
+    
+    thisWeekTotal = await Record.count({
+      where: { 
+        status: 'completed',
+        date: { [Op.gte]: thisMonday.toISOString().split('T')[0] }
+      }
+    });
+    
+    console.log('Debug - thisMonday:', thisMonday.toISOString().split('T')[0]);
+    console.log('Debug - thisWeekTotal:', thisWeekTotal);
 
     // 获取7日趋势数据
     const dates = [];
@@ -88,11 +129,15 @@ router.get('/', async (req, res) => {
       }
     });
 
+    console.log('Before response - lastWeekTotal:', lastWeekTotal);
+    console.log('Before response - thisWeekTotal:', thisWeekTotal);
+    
     res.json({
       success: true,
       data: {
         total,
         lastWeekTotal,
+        thisWeekTotal,
         todayCompleted,
         weeklyTrend,
         difficultyDistribution

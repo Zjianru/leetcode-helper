@@ -12,6 +12,7 @@ export default function Home() {
   const [stats, setStats] = useState({
     total: 0,
     lastWeekTotal: 0,
+    thisWeekTotal: 0,
     weeklyTrend: [],
     goalProgress: {
       current: 0,
@@ -93,8 +94,10 @@ export default function Home() {
     fetchGoalProgress();
   }, []);
 
-  // 计算增长率
-  const growthRate = Math.round(((stats.total - stats.lastWeekTotal) / stats.lastWeekTotal) * 100);
+  // 计算本周相对于上周的增长率
+  const growthRate = stats.lastWeekTotal > 0 
+    ? Math.round(((stats.thisWeekTotal - stats.lastWeekTotal) / stats.lastWeekTotal) * 100)
+    : 0;
 
   if (loading) {
     return (
@@ -162,6 +165,8 @@ export default function Home() {
             value={stats.total} 
             subTitle="上周刷题数"
             subValue={stats.lastWeekTotal}
+            subTitle2="本周刷题数"
+            subValue2={stats.thisWeekTotal}
             trend={growthRate >= 0 ? 'up' : 'down'}
             trendValue={Math.abs(growthRate)}
             theme={theme} 

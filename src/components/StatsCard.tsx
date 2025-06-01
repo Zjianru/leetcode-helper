@@ -5,6 +5,8 @@ interface StatsCardProps {
   value: number;
   subTitle?: string;
   subValue?: number;
+  subTitle2?: string;
+  subValue2?: number;
   trend?: 'up' | 'down' | 'none';
   trendValue?: number;
   theme: 'light' | 'dark';
@@ -15,6 +17,8 @@ export function StatsCard({
   value, 
   subTitle, 
   subValue, 
+  subTitle2, 
+  subValue2, 
   trend = 'none', 
   trendValue = 0, 
   theme 
@@ -42,11 +46,18 @@ export function StatsCard({
         )}
       </div>
       <div className="text-3xl font-bold mb-2">{value}</div>
-      {subTitle && subValue && (
-        <div className="text-sm opacity-80">
-          {subTitle}: <span className="font-medium">{subValue}</span>
-        </div>
-      )}
+      <div className="space-y-1">
+        {subTitle && subValue !== undefined && (
+          <div className="text-sm opacity-80">
+            {subTitle}: <span className="font-medium">{subValue}</span>
+          </div>
+        )}
+        {subTitle2 && subValue2 !== undefined && (
+          <div className="text-sm opacity-80">
+            {subTitle2}: <span className="font-medium">{subValue2}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
