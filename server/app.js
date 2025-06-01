@@ -13,6 +13,8 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import dailyRoutes from './routes/dailyRoutes.js';
+import reminderRoutes from './routes/reminderRoutes.js';
+import reminderService from './services/reminderService.js';
 
 dotenv.config();
 
@@ -35,11 +37,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Test database connection
+// Test database connection and start reminder service
 (async () => {
   try {
     await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
+    
+    // 启动提醒服务
+    reminderService.start();
+    console.log('Reminder service started successfully.');
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }
@@ -60,6 +66,7 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/daily', dailyRoutes);
+app.use('/api/v1/reminders', reminderRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

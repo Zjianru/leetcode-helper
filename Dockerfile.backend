@@ -13,6 +13,9 @@ RUN npm ci --only=production
 # 复制服务器代码
 COPY server/ ./server/
 
+# 确保 services 目录被复制
+COPY server/services/ ./server/services/
+
 # 创建非 root 用户
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nodejs -u 1001

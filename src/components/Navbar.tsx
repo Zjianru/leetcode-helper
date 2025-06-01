@@ -31,6 +31,13 @@ export function Navbar({ theme, toggleTheme }: NavbarProps) {
             <i className="fa-solid fa-tags"></i>
             <span>类别管理</span>
           </Link>
+          <Link 
+            to="/settings" 
+            className="text-white hover:underline flex items-center gap-1"
+          >
+            <i className="fa-solid fa-cog"></i>
+            <span>设置</span>
+          </Link>
           <button
             onClick={toggleTheme}
             className={cn(

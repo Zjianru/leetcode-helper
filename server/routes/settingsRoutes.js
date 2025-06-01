@@ -22,7 +22,8 @@ router.get('/', async (req, res) => {
         notifications: {
           dailyReminder: true,
           achievementAlert: true,
-          systemNotice: true
+          systemNotice: true,
+          reminderTime: '09:00' // 每日提醒时间
         },
         shortcuts: {
           addRecord: 'Ctrl+Shift+A',
@@ -87,7 +88,8 @@ router.post('/', async (req, res) => {
       notifications: notifications || {
         dailyReminder: true,
         achievementAlert: true,
-        systemNotice: true
+        systemNotice: true,
+        reminderTime: '09:00'
       },
       shortcuts: shortcuts || {
         addRecord: 'Ctrl+Shift+A',
@@ -156,7 +158,7 @@ router.patch('/:key', async (req, res) => {
       setting = await Setting.create({
         theme: 'light',
         language: 'zh-CN',
-        notifications: { dailyReminder: true, achievementAlert: true, systemNotice: true },
+        notifications: { dailyReminder: true, achievementAlert: true, systemNotice: true, reminderTime: '09:00' },
         shortcuts: { addRecord: 'Ctrl+Shift+A', toggleTheme: 'Ctrl+Shift+T', openErrorBook: 'Ctrl+Shift+E' },
         display: { itemsPerPage: 20, showDifficulty: true, showTags: true, compactMode: false },
         privacy: { shareProgress: false, publicProfile: false }
@@ -191,7 +193,8 @@ router.post('/reset', async (req, res) => {
       notifications: {
         dailyReminder: true,
         achievementAlert: true,
-        systemNotice: true
+        systemNotice: true,
+        reminderTime: '09:00'
       },
       shortcuts: {
         addRecord: 'Ctrl+Shift+A',

@@ -7,12 +7,13 @@ import { FloatingButton } from '../components/FloatingButton';
 import { CheckCircle, AlertCircle, Info, Bell, X } from 'lucide-react';
 
 type Notification = {
-  id: string;
+  id: number;
   type: 'reminder' | 'achievement';
   title: string;
   content: string;
   read: boolean;
   timestamp: string;
+  createdAt?: string; // 后端返回的创建时间字段
 };
 
 export default function NotificationsPage() {
@@ -28,12 +29,18 @@ export default function NotificationsPage() {
       setLoading(true);
       setError(null);
       const response = await fetch('/api/v1/notifications');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       
-      if (result.success) {
-        setNotifications(result.data || []);
+      // 适配后端API返回格式：{notifications: [...], total: number, ...}
+      if (result.notifications) {
+        setNotifications(result.notifications || []);
       } else {
-        setError(result.message || '获取通知数据失败');
+        setError('获取通知数据失败');
       }
     } catch (error) {
       console.error('获取通知数据失败:', error);
@@ -58,11 +65,16 @@ export default function NotificationsPage() {
     setFilteredNotifications(filtered);
   }, [notifications, activeTab]);
 
-  const handleMarkAsRead = async (id: string) => {
+  const handleMarkAsRead = async (id: number) => {
     try {
       const response = await fetch(`/api/v1/notifications/${id}/read`, {
         method: 'PATCH'
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       
       if (result.success) {
@@ -76,11 +88,16 @@ export default function NotificationsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     try {
       const response = await fetch(`/api/v1/notifications/${id}`, {
         method: 'DELETE'
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const result = await response.json();
       
       if (result.success) {

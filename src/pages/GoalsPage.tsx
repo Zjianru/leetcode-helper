@@ -13,32 +13,29 @@ type GoalSettings = {
     medium: number;
     hard: number;
   };
-  enableNotification: boolean;
-  notificationTime?: string;
 };
 
-const defaultSettings: GoalSettings = {
+const defaultGoalSettings: GoalSettings = {
   dailyTarget: 5,
-  difficultyRatio: { easy: 50, medium: 30, hard: 20 },
-  enableNotification: false,
-  notificationTime: '20:00'
+  difficultyRatio: { easy: 50, medium: 30, hard: 20 }
 };
 
 export default function GoalsPage() {
   const { theme, toggleTheme } = useTheme();
-  const [settings, setSettings] = useState<GoalSettings>(defaultSettings);
+  const [settings, setSettings] = useState<GoalSettings>(defaultGoalSettings);
 
   useEffect(() => {
-    // 从API获取目标设置
-    const fetchGoalSettings = async () => {
+    // 从API获取目标设置和通知设置
+    const fetchSettings = async () => {
       try {
-        const response = await fetch('/api/v1/goals');
-        const result = await response.json();
-        if (result.success && result.data) {
+        // 获取目标设置
+        const goalResponse = await fetch('/api/v1/goals');
+        const goalResult = await goalResponse.json();
+        if (goalResult.success && goalResult.data) {
           setSettings(prev => ({
             ...prev,
-            dailyTarget: result.data.dailyTarget,
-            difficultyRatio: result.data.difficultyRatio || prev.difficultyRatio
+            dailyTarget: goalResult.data.dailyTarget,
+            difficultyRatio: goalResult.data.difficultyRatio || prev.difficultyRatio
           }));
         } else {
           // 如果API请求失败，尝试从localStorage获取
@@ -47,9 +44,11 @@ export default function GoalsPage() {
             setSettings(JSON.parse(savedSettings));
           }
         }
+
+        // 通知设置已移至 SettingsPage 统一管理
       } catch (error) {
-        console.error('获取目标设置失败:', error);
-        // 网络错误时从localStorage获取
+        console.error('获取设置失败:', error);
+        // 网络错误时从localStorage获取目标设置
         const savedSettings = localStorage.getItem('goalSettings');
         if (savedSettings) {
           setSettings(JSON.parse(savedSettings));
@@ -57,7 +56,7 @@ export default function GoalsPage() {
       }
     };
     
-    fetchGoalSettings();
+    fetchSettings();
   }, []);
 
   const handleSave = async (newSettings: GoalSettings) => {
@@ -94,6 +93,8 @@ export default function GoalsPage() {
     }
   };
 
+  // 通知设置功能已移至 SettingsPage 统一管理
+
   return (
     <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-[#2F4F4F]' : 'bg-[#F5F5F5]'}`}>
       <Navbar theme={theme} toggleTheme={toggleTheme} />
@@ -104,38 +105,7 @@ export default function GoalsPage() {
             onSave={handleSave} 
             theme={theme} 
           />
-          <div className={cn(
-            "p-6 rounded-xl shadow-md",
-            theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
-          )}>
-            <h2 className="text-xl font-bold mb-4">通知设置</h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">每日提醒</h3>
-                <p className="text-sm opacity-70">设置每日刷题提醒时间</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={settings.enableNotification}
-                  onChange={() => handleSave({
-                    ...settings,
-                    enableNotification: !settings.enableNotification
-                  })}
-                  className="sr-only peer"
-                />
-                <div className={cn(
-                  "w-11 h-6 rounded-full peer",
-                  theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200',
-                  "peer-checked:after:translate-x-full peer-checked:after:border-white",
-                  "after:content-[''] after:absolute after:top-[2px] after:left-[2px]",
-                  "after:bg-white after:border-gray-300 after:border",
-                  "after:rounded-full after:h-5 after:w-5 after:transition-all",
-                  "peer-checked:bg-blue-600"
-                )}></div>
-              </label>
-            </div>
-          </div>
+          {/* 通知设置已移至设置页面 */}
 
         </div>
       </main>

@@ -5,21 +5,25 @@ import { Footer } from '@/components/Footer';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-type Shortcuts = {
-  addRecord: string;
-  toggleTheme: string;
+type Notifications = {
+  dailyReminder: boolean;
+  achievementAlert: boolean;
+  systemNotice: boolean;
+  reminderTime: string;
 };
 
 type Settings = {
   theme: 'light' | 'dark';
-  shortcuts: Shortcuts;
+  notifications: Notifications;
 };
 
 const defaultSettings: Settings = {
   theme: 'light',
-  shortcuts: {
-    addRecord: 'Ctrl+Shift+A',
-    toggleTheme: 'Ctrl+Shift+T'
+  notifications: {
+    dailyReminder: true,
+    achievementAlert: true,
+    systemNotice: true,
+    reminderTime: '09:00'
   }
 };
 
@@ -29,11 +33,40 @@ export default function SettingsPage() {
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    // Load settings from localStorage
-    const savedSettings = localStorage.getItem('appSettings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
+    // Load settings from localStorage and server
+    const loadSettings = async () => {
+      try {
+        // 从服务器获取设置
+        const response = await fetch('/api/v1/settings');
+        if (response.ok) {
+          const serverSettings = await response.json();
+          setSettings({
+            theme: serverSettings.theme || 'light',
+            notifications: serverSettings.notifications || defaultSettings.notifications
+          });
+        } else {
+          // 如果服务器请求失败，从 localStorage 加载
+          const savedSettings = localStorage.getItem('appSettings');
+          if (savedSettings) {
+            const parsed = JSON.parse(savedSettings);
+            setSettings({
+              ...defaultSettings,
+              ...parsed,
+              notifications: {
+                ...defaultSettings.notifications,
+                ...parsed.notifications
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('加载设置失败:', error);
+        // 使用默认设置
+        setSettings(defaultSettings);
+      }
+    };
+    
+    loadSettings();
   }, []);
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
@@ -47,28 +80,50 @@ export default function SettingsPage() {
     setIsDirty(true);
   };
 
-  const handleShortcutChange = (key: keyof Shortcuts, value: string) => {
-    // Basic conflict detection
-    const otherKey = key === 'addRecord' ? 'toggleTheme' : 'addRecord';
-    if (value === settings.shortcuts[otherKey]) {
-      toast.error('快捷键冲突，请选择不同的组合');
-      return;
-    }
 
+
+  const handleNotificationChange = (key: keyof Notifications, value: boolean | string) => {
     setSettings(prev => ({
       ...prev,
-      shortcuts: {
-        ...prev.shortcuts,
+      notifications: {
+        ...prev.notifications,
         [key]: value
       }
     }));
     setIsDirty(true);
   };
 
-  const handleSave = () => {
-    localStorage.setItem('appSettings', JSON.stringify(settings));
-    setIsDirty(false);
-    toast.success('设置已保存');
+  const handleSave = async () => {
+    try {
+      // 保存到服务器
+      const response = await fetch('/api/v1/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+      
+      if (response.ok) {
+        // 如果提醒时间发生变化，更新提醒服务
+        await fetch('/api/v1/reminders/time', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ reminderTime: settings.notifications.reminderTime }),
+        });
+        
+        localStorage.setItem('appSettings', JSON.stringify(settings));
+        setIsDirty(false);
+        toast.success('设置已保存');
+      } else {
+        throw new Error('保存设置失败');
+      }
+    } catch (error) {
+      console.error('保存设置失败:', error);
+      toast.error('保存设置失败，请重试');
+    }
   };
 
   return (
@@ -121,39 +176,86 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* 快捷键设置卡片 */}
+            {/* 提醒设置卡片 */}
             <div className={cn(
               "p-6 rounded-xl shadow-md",
               currentTheme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
             )}>
-              <h2 className="text-xl font-bold mb-4">快捷键设置</h2>
+              <h2 className="text-xl font-bold mb-4">
+                <i className="fa-regular fa-bell mr-2"></i>
+                提醒设置
+              </h2>
               <div className="space-y-4">
-                <div>
-                  <label className="block mb-2 font-medium">添加记录</label>
-                  <input
-                    type="text"
-                    value={settings.shortcuts.addRecord}
-                    onChange={(e) => handleShortcutChange('addRecord', e.target.value)}
-                    className={cn(
-                      "w-full px-3 py-2 border rounded-md",
-                      currentTheme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                    )}
-                  />
+                {/* 每日提醒开关 */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block font-medium">每日刷题提醒</label>
+                    <p className="text-sm opacity-70">在设定时间提醒你开始刷题</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.dailyReminder}
+                      onChange={(e) => handleNotificationChange('dailyReminder', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
-                <div>
-                  <label className="block mb-2 font-medium">切换主题</label>
-                  <input
-                    type="text"
-                    value={settings.shortcuts.toggleTheme}
-                    onChange={(e) => handleShortcutChange('toggleTheme', e.target.value)}
-                    className={cn(
-                      "w-full px-3 py-2 border rounded-md",
-                      currentTheme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                    )}
-                  />
+                
+                {/* 提醒时间设置 */}
+                {settings.notifications.dailyReminder && (
+                  <div>
+                    <label className="block mb-2 font-medium">提醒时间</label>
+                    <input
+                      type="time"
+                      value={settings.notifications.reminderTime}
+                      onChange={(e) => handleNotificationChange('reminderTime', e.target.value)}
+                      className={cn(
+                        "px-3 py-2 border rounded-md",
+                        currentTheme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
+                      )}
+                    />
+                  </div>
+                )}
+                
+                {/* 成就提醒开关 */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block font-medium">进度提醒</label>
+                    <p className="text-sm opacity-70">完成50%、75%、100%目标时提醒</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.achievementAlert}
+                      onChange={(e) => handleNotificationChange('achievementAlert', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+                
+                {/* 系统通知开关 */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block font-medium">系统通知</label>
+                    <p className="text-sm opacity-70">接收系统更新和重要通知</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={settings.notifications.systemNotice}
+                      onChange={(e) => handleNotificationChange('systemNotice', e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
                 </div>
               </div>
             </div>
+
+
 
             {/* 保存按钮 */}
             <button
